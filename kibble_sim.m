@@ -54,8 +54,9 @@ gamma = alpha + beta;
     Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000
     
     %Lever
-    Llev1 = 150e-3;               %full length of lever
-    Llev2 = 85e-3;               %length of section from pivot to application point
+    Llev1 = 150e-3;         %full length of lever
+    Llev2 = 85e-3;          %length of section from pivot to application point
+    Llev3 = 100e-3;         %length of double parallel leaf spring    
     phi = asin(z/Llev2);    %angle between lever and horizontal
     zm = Llev1*sin(phi);    %position of motor
     
