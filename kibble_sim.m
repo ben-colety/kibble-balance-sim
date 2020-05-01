@@ -28,32 +28,40 @@ alu = struct('E', 69e9, 'o_adm', 110e6/safety_factor);
 Materials = [alu];
 
 %% Position Initialization
-syms alpha beta z
+syms alpha beta z phi
 gamma = alpha + beta;
 
-%% Watt Linkage Dimensions
-L1 = 150e-3;            % length of horizontal bar
-L2 = 75e-3;             % length of vertical bar
-L3 = 250e-3;            % vertical distance between watt linkages
-L4 = 300e-3;            % vertical distance between center of "S"
-                        % and end effector
-checkDims(L1, L2, L3, L4);
+%% Physical Dimensions
+    %Watt Linkage
+    L1 = 150e-3;            % length of horizontal bar
+    L2 = 75e-3;             % length of vertical bar
+    L3 = 250e-3;            % vertical distance between watt linkages
+    L4 = 300e-3;            % vertical distance between center of "S"
+                            % and end effector
 
-x_shift = 1e-6;
-
-%% Compensation Dimensions
-    %mass
-    m = 3;
+    %Mass
+    m = 3;                              %Need to add Linkage name
     g = 9.81;
-    %chariot
-    Lc1 = 50e-3;       % distance spring is compressed when z = 0
-    Lc2 = 30e-3;        % length of lames for parallel leaf spring
-    Lc3 = 50e-3;        % length of linking lame
+    
+    %Rigidity Compensation
+    Lc1 = 50e-3;            % distance spring is compressed when z = 0
+    Lc2 = 30e-3;            % length of lames for parallel leaf spring
+    Lc3 = 50e-3;            % length of linking lame
 
     char_disp = Lc3 - sqrt(Lc3^2 - z^2);
     
-    %weight
-    Lg = m*g/1000;  %extension of spring at z = 0 for k = 1000
+    %Weight Compensation
+    Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000
+    
+    %Lever
+    Llev1 = 150e-3;               %full length of lever
+    Llev2 = 85e-3;               %length of section from pivot to application point
+    phi = asin(z/Llev2);    %angle between lever and horizontal
+    zm = Llev1*sin(phi);    %position of motor
+    
+    
+    
+    checkDims(L1, L2, L3, L4);
     
 %% Pivots/Springs
 %watt linkages
@@ -80,7 +88,7 @@ x_shift = 1e-6;
                 'ener_var', beta        );
     p10 = p9;   p10.location = 'b2-s';
     
-%chariots
+%rigidity comp
     sc = struct('location',  'gnd-c1',      ...
                  'type',     'comp_spring', ...
                  'k',        8000,          ...
@@ -110,27 +118,28 @@ x_shift = 1e-6;
                  'type',     'parallel',    ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', alpha          );            %need to solve
+                 'ener_var', zm             );              %need to solve
     pl2 = struct('location', 'lev2-lev1',   ...
                  'type',     'lame',        ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', alpha          );              %need to solve
+                 'ener_var', phi            );              %need to solve
     pl3 = struct('location', 'lev1-s',      ...
                  'type',     'lame',        ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', alpha          );              %need to solve
+                 'ener_var', phi            );              %need to solve
     pl4 = struct('location', 'lev1-gnd',    ...
                  'type',     'col',         ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', alpha          );              %need to solve
+                 'ener_var', phi            );              %need to solve
             
 Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
-Pivots_chariot = [sc, pc1, pc2, pc3];
+Pivots_rigidity = [sc, pc1, pc2, pc3];
 Pivots_weight = [sg];
-Pivots = [Pivots_link, Pivots_chariot, Pivots_weight];
+Pivots_lever = [pl1, pl2, pl3, pl4];
+Pivots = [Pivots_link, Pivots_chariot, Pivots_weight, Pivots_lever];
             
 %% Simulation
 
