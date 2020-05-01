@@ -139,7 +139,7 @@ Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
 Pivots_rigidity = [sc, pc1, pc2, pc3];
 Pivots_weight = [sg];
 Pivots_lever = [pl1, pl2, pl3, pl4];
-Pivots = [Pivots_link, Pivots_chariot, Pivots_weight, Pivots_lever];
+Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight, Pivots_lever];
             
 %% Simulation
 
@@ -147,6 +147,7 @@ Pivots = [Pivots_link, Pivots_chariot, Pivots_weight, Pivots_lever];
 alpha_pas = 0.001;
 alpha = zeros(500, 1);
 beta = zeros(500, 1);
+phi = zeros(500, 1);
 x = zeros(500, 1);
 z = zeros(500, 1);
 beta = zeros(500, 1);
@@ -166,15 +167,19 @@ while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
 end
 
+phi = asin(z/Llev2);
+
 %trimming arrays
 alpha = alpha(2:find(alpha,1,'last'));
 beta = beta(2:find(beta,1,'last'));
+phi = phi(2:find(phi,1,'last'));
 x = x(2:find(x,1,'last'));
 z = z(2:find(z,1,'last'));
 
 %sorting arrays
 [alpha, sort_ind] = sort(alpha);
 beta = beta(sort_ind);
+phi = phi(sort_ind);
 z = z(sort_ind);
 x = x(sort_ind);
 
