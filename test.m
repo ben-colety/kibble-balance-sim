@@ -1,14 +1,37 @@
 clc
 clear all
 
+%%
+% syms x y
+%    sc = struct(  'location',  'gnd-c1',      ...
+%                  'type',     'comp_spring', ...
+%                  'k',        80,            ...
+%                  'cor_adm',  1000,          ... %N/A
+%                  'ener_var', x  );
+%     pc1 = struct('location', 'gnd-c1',      ...
+%                  'type',     'parallel',    ...
+%                  'k',        5,             ...
+%                  'cor_adm',  5,             ...
+%                  'ener_var', x      );
+%     pc2 = struct('location', 'c1-c2',       ...
+%                  'type',     'col',         ...
+%                  'k',        5,             ...
+%                  'cor_adm',  5,             ...
+%                  'ener_var', y    );
+% 
+%              
+%      pivots = [sc pc1 pc2];
+%      T = struct2table(pivots)
+%      T(4) = 
 
-a = "help"
-b = "help"
-c = "no help"
-
-if (a == b) || (b == c)
-    disp('help is on the way');
-end
+%%
+% a = "help"
+% b = "help"
+% c = "no help"
+% 
+% if (a == b) || (b == c)
+%     disp('help is on the way');
+% end
 
 %%
 
