@@ -54,11 +54,11 @@ gamma = alpha + beta;
     Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000
     
     %Lever
-    Llev1 = 150e-3;         %full length of lever
-    Llev2 = 85e-3;          %length of section from pivot to application point
-    Llev3 = 100e-3;         %length of double parallel leaf spring    
-    phi = asin(z/Llev2);    %angle between lever and horizontal
-    zm = Llev1*sin(phi);    %position of motor
+    L_lev1 = 150e-3;         %full length of lever
+    L_lev2 = 85e-3;          %length of section from pivot to application point
+    L_lev3 = 100e-3;         %length of double parallel leaf spring    
+    phi = asin(z/L_lev2);    %angle between lever and horizontal
+    zm = L_lev1*sin(phi);    %position of motor
     
     
     
@@ -168,7 +168,7 @@ while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
 end
 
-phi = asin(z/Llev2);
+phi = asin(z/L_lev2);
 
 %trimming arrays
 alpha = alpha(2:find(alpha,1,'last'));
