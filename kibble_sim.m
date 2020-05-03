@@ -38,7 +38,6 @@ gamma = alpha + beta;
     L3 = 250e-3;            % vertical distance between watt linkages
     L4 = 300e-3;            % vertical distance between center of "S"
                             % and end effector
-
     %Mass
     m = 3;                              %Need to add Linkage name
     g = 9.81;
@@ -59,7 +58,6 @@ gamma = alpha + beta;
     L_lev3 = 100e-3;         %length of double parallel leaf spring    
     phi = asin(z/L_lev2);    %angle between lever and horizontal
     zm = L_lev1*sin(phi);    %position of motor
-    
     
     checkDims(L1, L2, L3, L4);
     
