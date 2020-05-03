@@ -1,10 +1,21 @@
 clc
 clear all
 
-a = [51 72 33 44 55];
-b = [21 82 43 34 25];
-[a1, ai] = sort(a);
-b1 = b(ai);
+
+a = "help"
+b = "help"
+c = "no help"
+
+if (a == b) || (b == c)
+    disp('help is on the way');
+end
+
+%%
+
+% a = [51 72 33 44 55];
+% b = [21 82 43 34 25];
+% [a1, ai] = sort(a);
+% b1 = b(ai);
 
 % a(2) = [];
 % length(a)
