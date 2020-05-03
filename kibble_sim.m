@@ -61,7 +61,6 @@ gamma = alpha + beta;
     zm = L_lev1*sin(phi);    %position of motor
     
     
-    
     checkDims(L1, L2, L3, L4);
     
 %% Pivots/Springs
