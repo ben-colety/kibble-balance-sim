@@ -142,8 +142,6 @@ gamma = alpha + beta;
             
     Pivots_lever = [pl1, pl2, pl3, pl4];
 
-
-
 Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight, Pivots_lever];
             
 %% Simulation
@@ -152,10 +150,8 @@ Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight, Pivots_lever];
 alpha_pas = 0.001;
 alpha = zeros(500, 1);
 beta = zeros(500, 1);
-phi = zeros(500, 1);
 x = zeros(500, 1);
-z = zeros(500, 1);
-beta = zeros(500, 1);
+z = zeros(500, 1); 
 i = 1;
 %linkage descending
 while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
@@ -172,30 +168,30 @@ while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
 end
 
-phi = asin(z/L_lev2);
-
 %trimming arrays
 alpha = alpha(2:find(alpha,1,'last'));
 beta = beta(2:find(beta,1,'last'));
-phi = phi(2:find(phi,1,'last'));
 x = x(2:find(x,1,'last'));
 z = z(2:find(z,1,'last'));
 
 %sorting arrays
 [alpha, sort_ind] = sort(alpha);
 beta = beta(sort_ind);
-gamma = eval(gamma);
-phi = phi(sort_ind);
 z = z(sort_ind);
 x = x(sort_ind);
-Positions = [alpha beta gamma phi z x]
+
+gamma = eval(gamma);
+phi = asin(z/L_lev2);
+zm = eval(zm);
+Positions = [alpha beta gamma phi z x zm];
 
 %% Energy & Force
-Energies = zeros(length(z), length(Pivots));
+Energies = zeros(length(z), length(Pivots)+1);
 for i = 1:length(Pivots)
     ener = calcEnergy(Pivots(i));
     Energies(:,i) = eval(ener);
 end
+Energies(:,length(Pivots)+1) = -m*g*z;
 sumEnergies = sum(Energies, 2);
 
 %Force
@@ -204,27 +200,49 @@ sampling_pts = min(z):sampling_res:max(z);
 fctEnergy = interp1(z,sumEnergies, sampling_pts, 'spline');
 force = diff(fctEnergy);
 
+%Rigidity Tangentielle Residuelle
+rig_res = diff(force);
+
 %% Results
-z_course_ind = find(abs(z) < 15e-3);
-max_x       = max(abs(x(min(z_course_ind):max(z_course_ind))))
+
 max_alpha   = max(alpha)
 max_beta    = max(beta)
 max_gamma   = max(gamma)
 
-z_course_ind = find(abs(sampling_pts) < 15e-3);
-%maximum residual force over the course
 disp('during the linear movement');
+z_course_ind = find(abs(z) < 15e-3);
+%maximum parasitic motion in x during linear trajectory
+max_x       = max(abs(x(min(z_course_ind):max(z_course_ind))))
+z_course_ind = find(abs(sampling_pts) < 15e-3);
+%maximum residual force during linear trajectory
 max_force = max(abs(force(min(z_course_ind):max(z_course_ind))))
 
 
 %% Graphics
 figure(1);
 plot(z, x, 'r');
+title('z vs x');
+xlabel('z (m)');
+ylabel('x (m)');
+
 
 figure(2);
-plot(z, sumEnergies, 'r'); hold on %plot sum of all Energies
+plot(z, sumEnergies, 'r'); %plot sum of all Potential Energies
+title('z vs Sum of All Potentiel Energies')
+xlabel('z (m)');
+ylabel('Energy (J)');
+
 figure(3);
 plot(sampling_pts(1:length(sampling_pts)-1), force, 'g'); %plot Forces
+title('z vs Residual Force')
+xlabel('z (m)');
+ylabel('Residual Force (N)');
+
+figure(4);
+plot(sampling_pts(1:length(sampling_pts)-2),rig_res);
+title('z vs Residual Tangential Rigidity')
+xlabel('z (m)');
+ylabel('Residual Rigidity (N/m)');
 
 %% FUNCTIONS
 function checkDims(L1, L2, L3, L4)
@@ -277,5 +295,8 @@ function stop = checkTolerances(Materials, Pivots, alpha, beta, z, x)
     limit_rot_xy = 50e-6;
     limit_rot_z = 1e-6;
     
+end
+function failure = checkFlambage(Pivots, Materials, Positions)
+
 end
 
