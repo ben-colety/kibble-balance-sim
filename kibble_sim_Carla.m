@@ -1,3 +1,4 @@
+
 %CONCEPTION DES MECANISMES II
 %BALANCE DE KIBBLE PROJET 2020
 %GROUP 11 SOLUTION 1
@@ -69,12 +70,14 @@ gamma = alpha + beta;
                 'type',     'cross',    ...
                 'k',        400,        ...     %effective rigidity
                 'cor_adm',  5,          ...     %course admissible
-                'ener_var', alpha       ...);      %variable linked to energy
+                'ener_var', alpha,      ...     %variable linked to energy
+                'Dims',     zeros(1,8)  );      %L, h, e/r, e_min, e_max, r_min, r_max, d_compression/ pivots croix et table lame parallel ; pivots cols ; ressorts
     p2 = struct('location', 'a1-a2',    ...
                 'type',     'cross',    ...
-                'k',        300,          ...
+                'k',        300,        ...
                 'cor_adm',  5,          ...
-                'ener_var', gamma       );
+                'ener_var', gamma,      ...
+                'Dims',     zeros(1,8)  );
     p3 = p2;    p3.location = 'a2-a3';
     p4 = p1;    p4.location = 'a3-gnd';
     p5 = p1;    p5.location = 'gnd-b1';
@@ -85,7 +88,8 @@ gamma = alpha + beta;
                 'type',     'cross',    ...
                 'k',        1000,       ...
                 'cor_adm',  5,          ...
-                'ener_var', beta        );
+                'ener_var', beta,       ...
+                'Dims',     zeros(1,8)  );
     p10 = p9;   p10.location = 'b2-s';
     
 %rigidity comp
@@ -93,17 +97,20 @@ gamma = alpha + beta;
                  'type',     'comp_spring', ...
                  'k',        8000,          ...
                  'cor_adm',  1000,          ... %N/A
-                 'ener_var', Lc1-char_disp  );
+                 'ener_var', Lc1-char_disp, ...
+                 'Dims',     zeros(1,8)  );
     pc1 = struct('location', 'gnd-c1',      ...
                  'type',     'parallel',    ...
                  'k',        500,           ...
                  'cor_adm',  5,             ...
-                 'ener_var', char_disp      );
+                 'ener_var', char_disp,     ...
+                 'Dims',     zeros(1,8)     );
     pc2 = struct('location', 'c1-c2',       ...
                  'type',     'col',         ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', asin(z/Lc3)    );
+                 'ener_var', asin(z/Lc3),   ...
+                 'Dims',     zeros(1,8)     );
     pc3 = pc2; pc3.location = 'c2-s';
     
 %weight comp
@@ -111,99 +118,154 @@ gamma = alpha + beta;
                  'type',     'spring',      ...
                  'k',        1000,          ...
                  'cor_adm',  1000,          ... %N/A
-                 'ener_var', z+Lg           );
+                 'ener_var', z+Lg,          ...
+                 'Dims',     zeros(1,8)     );
             
 %lever
     pl1 = struct('location', 'gnd-lev2',    ...
                  'type',     'parallel',    ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', zm             );              %need to solve
+                 'ener_var', zm,            ...
+                 'Dims',     zeros(1,8)     );             %need to solve
     pl2 = struct('location', 'lev2-lev1',   ...
                  'type',     'lame',        ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', phi            );              %need to solve
+                 'ener_var', phi,           ...
+                 'Dims',     zeros(1,8)     );             %need to solve
     pl3 = struct('location', 'lev1-s',      ...
                  'type',     'lame',        ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', phi            );              %need to solve
+                 'ener_var', phi,           ...
+                 'Dims',     zeros(1,8)     );              %need to solve
     pl4 = struct('location', 'lev1-gnd',    ...
                  'type',     'col',         ...
                  'k',        1000,          ...
                  'cor_adm',  5,             ...
-                 'ener_var', phi            );              %need to solve
+                 'ener_var', phi,           ...
+                 'Dims',     zeros(1,8)     );              %need to solve
             
 Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
 Pivots_rigidity = [sc, pc1, pc2, pc3];
 Pivots_weight = [sg];
 Pivots_lever = [pl1, pl2, pl3, pl4];
-Pivots = [Pivots_link, Pivots_chariot, Pivots_weight, Pivots_lever];
+Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight, Pivots_lever];
             
 %% Simulation
 
 %initialization
-alpha_pas = 0.001;
-alpha = zeros(500, 1);
-beta = zeros(500, 1);
-x = zeros(500, 1);
-z = zeros(500, 1);
-beta = zeros(500, 1);
-i = 1;
-%linkage descending
-while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
-    i=i+1;
-    alpha(i) = alpha(i-1)+ alpha_pas;
-    [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
-end
-%reset to 0
-i=i+1;
-%rising
-while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
-    i=i+1;
-    alpha(i) = alpha(i-1)- alpha_pas;
-    [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
-end
-
-%trimming arrays
-alpha = alpha(2:find(alpha,1,'last'));
-beta = beta(2:find(beta,1,'last'));
-x = x(2:find(x,1,'last'));
-z = z(2:find(z,1,'last'));
-
-%sorting arrays
-[alpha, sort_ind] = sort(alpha);
-beta = beta(sort_ind);
-z = z(sort_ind);
-x = x(sort_ind);
+% alpha_pas = 0.001;
+% alpha = zeros(500, 1);
+% beta = zeros(500, 1);
+% x = zeros(500, 1);
+% z = zeros(500, 1);
+% beta = zeros(500, 1);
+% i = 1;
+% %linkage descending
+% while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
+%     i=i+1;
+%     alpha(i) = alpha(i-1)+ alpha_pas;
+%     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
+% end
+% %reset to 0
+% i=i+1;
+% %rising
+% while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
+%     i=i+1;
+%     alpha(i) = alpha(i-1)- alpha_pas;
+%     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
+% end
+% 
+% %trimming arrays
+% alpha = alpha(2:find(alpha,1,'last'));
+% beta = beta(2:find(beta,1,'last'));
+% x = x(2:find(x,1,'last'));
+% z = z(2:find(z,1,'last'));
+% 
+% %sorting arrays
+% [alpha, sort_ind] = sort(alpha);
+% beta = beta(sort_ind);
+% z = z(sort_ind);
+% x = x(sort_ind);
+% max(abs(alpha))
+% max(abs(beta))
+% %max(abs(gamma))
+% %max(abs(phi))
+% max(abs(z))
+% max(abs(x))
+alpha_m=0.2030; beta_m=0.0815; z_m=0.0301; x_m=2.5539e-05;
 
 %% Energy & Force
-Energies = zeros(length(z), length(Pivots));
-for i = 1:length(Pivots)
-    ener = calcEnergy(Pivots(i));
-    Energies(:,i) = eval(ener);
+% Energies = zeros(length(z), length(Pivots));
+% for i = 1:length(Pivots)
+%     ener = calcEnergy(Pivots(i));
+%     Energies(:,i) = eval(ener);
+% end
+% sumEnergies = sum(Energies, 2);
+% 
+% %Force
+% sampling_res = max(z)*2/(length(z)*4);
+% sampling_pts = min(z):sampling_res:max(z);
+% fctEnergy = interp1(z,sumEnergies, sampling_pts, 'spline');
+% force = diff(fctEnergy);
+% 
+% %% Graphics
+% figure(1);
+% plot(z, x, 'r');
+% 
+% figure(2);
+% plot(z, sumEnergies, 'r'); hold on %plot sum of all Energies
+% figure(3);
+% plot(sampling_pts(1:length(sampling_pts)-1), force, 'g'); %plot Forces
+
+%% Dimensioning Pivots
+for i=1:length(Pivots)
+    j=1;                                % choix matériaux = alu
+    if ((Pivots(i).type == "cross") | (Pivots(i).type == "col")) % check if pivots
+        h_L = Materials(j).o_adm/(2*(Materials(j).E)*alpha_m); %change recording to max of angle used
+        hmax = sqrt(3*Pivots(i).k/(2*(Materials(j).E)*b*h_L));
+        Lmin = hmax/h_L;
+        Pivots(i).Dims(1) = Lmin; Pivots(i).Dims(2) = hmax; % add in table L h for cross
+        e_r = (Pivots(i).k/(0.353*Materials(j).E*b))^2;
+        if e_r > 1/5
+            warning('Pivot à col %d has a too large e_r ratio', i)
+        end
+        e_max= b/10; 
+        if e_max > 10e-3
+            e_max = 10e-3;
+            e_min = 10e-6;
+            piv_col = 1;
+        elseif e_max < 10e-6
+            piv_col = 0;
+            warning('Pivot %d has to large e_min', i)
+        else
+            e_min = 10e-6;
+            piv_col = 1;
+        end
+        if piv_col  %L, h, e/r, e_min, e_max, r_min, r_max, d_compression
+            r_min = e_max/e_r;
+            r_max = e_min/e_r;
+            Pivots(i).Dims(3) = e_r; Pivots(i).Dims(4) = e_max; 
+            Pivots(i).Dims(5) = e_min; Pivots(i).Dims(6) = r_min; 
+            Pivots(i).Dims(3) = r_max;
+        end  
+        Pivots(i).Dims
+        
+   % elseif 
+        
+%     elseif p.type == 'comp_spring'
+%         Lmin = 'not defined';
+%         hmax = Lmin;
+%     elseif p.type == 'parallel'
+%         Lmin = 'not defined';
+%         hmax = Lmin;
+%     elseif p.type == 'spring'
+%         Lmin = 'not defined';
+%         hmax = Lmin;
+    end
 end
-sumEnergies = sum(Energies, 2);
-
-%Force
-sampling_res = max(z)*2/(length(z)*4);
-sampling_pts = min(z):sampling_res:max(z);
-fctEnergy = interp1(z,sumEnergies, sampling_pts, 'spline');
-force = diff(fctEnergy);
-
-%% Graphics
-figure(1);
-plot(z, x, 'r');
-
-figure(2);
-plot(z, sumEnergies, 'r'); hold on %plot sum of all Energies
-figure(3);
-plot(sampling_pts(1:length(sampling_pts)-1), force, 'g'); %plot Forces
-max(abs(alpha))
-max(abs(beta))
-max(abs(phi))
-max(abs(gamma))
 
 %% FUNCTIONS
 function checkDims(L1, L2, L3, L4)
