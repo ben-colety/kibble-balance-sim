@@ -1,7 +1,5 @@
-clc
-clear all
 
-phi = 0:.01:.1;
+phi = 0:.01:.12;
 Positions = phi;
 alu = struct('E', 69e9, 'o_adm', 110e6/2);
 
@@ -9,23 +7,28 @@ Materials = [alu];
 b = 50e-3;
 
 pl2 = pivot('spring', 1, phi,1);
-pl4 = pivot('point', 1, phi);
+pl4 = pivot('point', 4, phi);
+pc1 = pivot('parallel', 5, phi);
 pl3 = pl2;
 
-Pivots = [pl2 pl3 pl4];
+Pivots = [pl2 pl3 pl4 pc1];
 
 
 for i = 1:length(Pivots)
     for j = 1:length(Materials)
         switch Pivots(i).type
-            case 'spring'
+            case {'spring','parallel'}
                 syms h L
                 rig = Pivots(i).k == Pivots(i).num_lames * Materials(j).E * b * h^3 / L^3;
                 adm = max(abs(Pivots(i).ener_var)) == Materials(j).o_adm*L^2 /(3*Materials(j).E*h);
-                fprintf('lame for pivot %d\n',i)
+                if Pivots(i).type == "parallel"
+                    fprintf('parallel for pivot %d\n',i)
+                elseif Pivots(i).type == "spring"
+                    fprintf('spring for pivot %d with %d lames\n',i,Pivots(i).num_lames)
+                end
                 Pivots(i) = pivotSolve(Pivots(i),rig, adm, h, L)
 
-            case 'point'
+            case {'point','col','cross'}
                 %calculation as a col
                 syms e r
                 rig = Pivots(i).k == 2* Materials(j).E * b * e^(2.5) / (9*pi*r^(0.5));
