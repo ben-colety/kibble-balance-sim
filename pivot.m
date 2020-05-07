@@ -3,7 +3,6 @@ classdef pivot
         type;
         k;
         ener_var;
-        %dims;
         num_lames = 0;
         h; L; e; r;
     end
@@ -12,7 +11,6 @@ classdef pivot
             obj.type = type;
             obj.k = k;
             obj.ener_var = ener_var;
-           %obj.dims = {};
             if type == "spring"
                 obj.num_lames = num_lames;
             elseif type == "parallel"
@@ -33,7 +31,11 @@ classdef pivot
             %obj.dims = {sol1 sol2}
         end
         function energy = calcEnergy(p)
-            energy = 0.5*p.k*p.ener_var.^2;
+            if class(p.ener_var) == "sym"
+                energy = 0.5*p.k*p.ener_var^2;
+            elseif class(p.ener_var) == "double"
+                energy = 0.5*p.k*p.ener_var.^2;
+            end
         end
     end
 end
