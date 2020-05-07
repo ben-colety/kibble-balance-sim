@@ -1,74 +1,94 @@
 clc 
 clear all
 
-syms x y
+% syms g h
+% b_1 = 5;
+% b = struct('x', 5, 'z', 12, 'y', {b_1 b_1+1});
+% c = b;
+% %c(1).x = 8;
+% d = struct('x', 6, 'y', {b_1});
+% 
+% eq1 = g*h ==-1;
+% eq2 = g+2*h == 3;
+% 
+% sol = solve(eq1,eq2, [g h]);
 
-f = (x*y) == 1;
-g = (x)+y == 0;
-huh = [{x} {y}];
-solution = testfunct(f, g, {x}, {y})
-
-
-function sols1 = testfunct(eq1, eq2, t, s)
-
-    sols = solve(eq1, eq2, [t s]);
-    sols1 = sols.((t{1,1}))
-%     sols1 = sols.t(1)(imag(sols.t)==0);
-%     sols2 = sols.s(1)(imag(sols.s)==0);
-end
 %%
-% phi = 0:.01:5;
-% Positions = phi;
-% alu = struct('E', 69e9, 'o_adm', 110e6/2);
+
+
+% syms x y
 % 
-% Materials = [alu];
-% b = 50e-3;
-%  pl2 = struct('location', 'lev2-lev1',   ...
-%                  'type',     'lame',        ...
-%                  'k',        1,             ...
-%                  'cor_adm',  5,             ...
-%                  'ener_var', phi,           ... 
-%                  'Dims',     [3; zeros(7,1)]);
-%  pl4 = struct(   'location', 'lev1-gnd',    ...
-%                  'type',     'col',         ...
-%                  'k',        0.5,           ...
-%                  'cor_adm',  5,             ...
-%                  'ener_var', phi,           ... 
-%                  'Dims',     zeros(1, 8)    );
+% f = (x*y) == -1;
+% g = (x)+y == 0;
+% solution = testfunct(f, g, x, y)
 % 
-% Pivots = [pl2 pl4];
 % 
-% syms h L
-% for i = 1:2;
-% for j = 1;
-% switch Pivots(i).type
-%     case 'lame'
-%         rig = Pivots(i).k == Pivots(i).Dims(1) * Materials(j).E * b * h^3 / L^3;
-%         adm = max(abs(Pivots(i).ener_var)) == Materials(j).o_adm*L^2 /(3*Materials(j).E*h);
+% function sols1 = testfunct(eq1, eq2, t, s)
 % 
-% %         solutions = solve(rig, adm, [h L]);
-% % 
-% %         h_sol  = eval(solutions.h)
-% %         L_sol  = eval(solutions.L)
-% %         h_real = eval(solutions.h(imag(solutions.h)==0))
-% %         L_real = eval(solutions.L(imag(solutions.L)==0))
-%         possible = pivotSolve(rig, adm, {h},{L})
-% 
+%     sols = solve(eq1, eq2, [t s]);
+%     var1 = char(t);
+%     var2 = char(s);
+%     sols1 = sols.(var1)
+% %     sols1 = sols.t(1)(imag(sols.t)==0);
+% %     sols2 = sols.s(1)(imag(sols.s)==0);
 % end
-% end
-% end
+%%
+phi = 0:.01:.1;
+Positions = phi;
+alu = struct('E', 69e9, 'o_adm', 110e6/2);
+
+Materials = [alu];
+b = 50e-3;
+ pl2 = struct('location', 'lev2-lev1',   ...
+                 'type',     'lame',        ...
+                 'k',        1,             ...
+                 'cor_adm',  5,             ...
+                 'ener_var', phi,           ... 
+                 'Dims',     [3; zeros(7,1)]);
+ pl4 = struct(   'location', 'lev1-gnd',    ...
+                 'type',     'col',         ...
+                 'k',        6,             ...
+                 'cor_adm',  5,             ...
+                 'ener_var', phi,           ... 
+                 'Dims',     zeros(1, 8)    );
+
+Pivots = [pl2 pl4];
+
+syms h L
+for i = 1:2;
+for j = 1;
+switch Pivots(i).type
+    case 'lame'
+        
+        rig = Pivots(i).k == Pivots(i).Dims(1) * Materials(j).E * b * h^3 / L^3;
+        adm = max(abs(Pivots(i).ener_var)) == Materials(j).o_adm*L^2 /(3*Materials(j).E*h);
+
+%         solutions = solve(rig, adm, [h L],'ReturnConditions', true);
 % 
-% function solutions = pivotSolve(eq1, eq2, var1, var2)
-%         
-%         solutions = solve(eq1, eq2);
-% 
-%         h_sol  = eval(solutions.var1)
-%         L_sol  = eval(solutions.var2)
-%         h_real = eval(solutions.var1(imag(solutions.var1)==0))
-%         L_real = eval(solutions.var2(imag(solutions.var2)==0))
-% 
-%         pos_solutions = struct('h', h_real, 'L', L_real);
-% end
+%         h_sol  = eval(solutions.h)
+%         L_sol  = eval(solutions.L)
+%         h_real = eval(solutions.h(imag(solutions.h)==0))
+%         L_real = eval(solutions.L(imag(solutions.L)==0))
+        
+        possible = pivotSolve(rig, adm, h, L)
+
+end
+end
+end
+
+function pos_solutions = pivotSolve(eq1, eq2, t, s)
+       
+        solutions = solve(eq1, eq2, [t s]);
+        var1 = char(t);
+        var2 = char(s);
+        
+        h_sol  = eval(solutions.(var1))
+        L_sol  = eval(solutions.(var2))
+        h_real = eval(solutions.(var1)(imag(solutions.(var1))==0))
+        L_real = eval(solutions.(var2)(imag(solutions.(var2))==0))
+
+        pos_solutions = struct('h', h_real, 'L', L_real);
+end
 
 %%
 % a = struct( 'x', 1, 'y', 2, 'dims', zeros(1,8));
