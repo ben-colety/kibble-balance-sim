@@ -32,32 +32,28 @@ syms alpha beta z phi
 gamma = alpha + beta;
 
 %% Physical Dimensions
+
+    %General
+    m = 3;                          %Need to add Linkage mass
+    g = 9.81;
+    b = 50e-3;              %thickness of planar material
+
     %Watt Linkage
     L1 = 250e-3;            % length of horizontal bar
     L2 = 75e-3;             % length of vertical bar
     L3 = 250e-3;            % vertical distance between watt linkages
     L4 = 300e-3;            % vertical distance between center of "S"
                             % and end effector
-    %Mass
-    m = 3;                              %Need to add Linkage name
-    g = 9.81;
-    
+
     %Rigidity Compensation
     Lc1 = 50e-3;            % distance spring is compressed when z = 0
     Lc2 = 30e-3;            % length of lames for parallel leaf spring
-    Lc3 = 200e-3;            % length of linking lame
+    Lc3 = 200e-3;           % length of linking lame
 
     char_disp = Lc3 - sqrt(Lc3^2 - z^2);
     
     %Weight Compensation
     Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000
-    
-    %Lever
-    L_lev1 = 150e-3;         %full length of lever
-    L_lev2 = 85e-3;          %length of section from pivot to application point
-    L_lev3 = 100e-3;         %length of double parallel leaf spring    
-    phi = asin(z/L_lev2);    %angle between lever and horizontal
-    zm = L_lev1*sin(phi);    %position of motor
     
     checkDims(L1, L2, L3, L4);
     
@@ -66,12 +62,14 @@ gamma = alpha + beta;
     p1 = struct('location', 'gnd-a1',   ...
                 'type',     'cross',    ...
                 'k',        4,          ...     %effective rigidity
+                'dims',     {b},        ...
                 'ener_var', alpha       );      %variable linked to energy
     p2 = struct('location', 'a1-a2',    ...
                 'type',     'cross',    ...
                 'k',        3,          ...
+                'dims',     {b},        ...
                 'ener_var', gamma       );
-    p3 = p2;    p3.location = 'a2-a3';
+    p3 = p2;    p3(1).location = 'a2-a3';
     p4 = p1;    p4.location = 'a3-gnd';
     p5 = p1;    p5.location = 'gnd-b1';
     p6 = p2;    p6.location = 'b1-b2';
@@ -80,23 +78,27 @@ gamma = alpha + beta;
     p9 = struct('location', 'a2-S',     ...
                 'type',     'cross',    ...
                 'k',        1,          ...
+                'dims',     {b},        ...
                 'ener_var', beta        );
     p10 = p9;   p10.location = 'b2-s';
     
     Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
     
 %rigidity comp
-    sc = struct('location',  'gnd-c1',      ...
-                 'type',     'comp_spring', ...
+    sc  = struct('location', 'gnd-c1',      ...
+                 'type',     'spring',      ...
                  'k',        80,            ...
+                 'dims',     {b},           ...
                  'ener_var', Lc1-char_disp  );
     pc1 = struct('location', 'gnd-c1',      ...
                  'type',     'parallel',    ...
                  'k',        5,             ...
+                 'dims',     {b},           ...
                  'ener_var', char_disp      );
     pc2 = struct('location', 'c1-c2',       ...
                  'type',     'col',         ...
                  'k',        5,             ...
+                 'dims',     {b},           ...
                  'ener_var', asin(z/Lc3)    );
          
     pc3 = pc2; pc3.location = 'c2-s';
@@ -104,9 +106,10 @@ gamma = alpha + beta;
     Pivots_rigidity = [sc, pc1, pc2, pc3];
     
 %weight comp
-    sg = struct('location', 'gnd-s',        ...
+    sg  = struct('location', 'gnd-s',       ...
                  'type',     'spring',      ...
                  'k',        1,             ...
+                 'dims',     {b},           ...
                  'ener_var', z+Lg           );
              
     Pivots_weight = [sg];
@@ -173,11 +176,19 @@ force = diff(fctEnergy);
 %Rigidity Tangentielle Residuelle
 rig_res = diff(force);
 
+%% Pivot/Spring Physical Dimensions
+
+for i = 1:length(Pivots)
+    for j = 1:length(Materials)
+        
+    end
+end
+
 %% Results
 
-max_alpha   = max(alpha)
-max_beta    = max(beta)
-max_gamma   = max(gamma)
+max_alpha   = max(abs(alpha))
+max_beta    = max(abs(beta))
+max_gamma   = max(abs(gamma))
 
 disp('during the linear movement');
 z_course_ind = find(abs(z) < 15e-3);
