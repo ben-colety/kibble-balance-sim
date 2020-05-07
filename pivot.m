@@ -32,5 +32,8 @@ classdef pivot
             obj.(var2) = sol2;
             %obj.dims = {sol1 sol2}
         end
+        function energy = calcEnergy(p)
+            energy = 0.5*p.k*p.ener_var.^2;
+        end
     end
 end
