@@ -60,28 +60,22 @@ gamma = alpha + beta;
 %% Pivots/Springs
 %watt linkages
     p1 = pivot('point', 4, alpha);          %type, k, displacement variable
-    p2 = pivot('point', 3, gamma);
-    p3 = p2;    
-    p4 = p1;    
-    p5 = p1;    
-    p6 = p2;    
-    p7 = p2;    
-    p8 = p1;   
+    p2 = pivot('point', 3, gamma);  
     p9 = pivot('point', 1, beta );
-    p10 = p9;
     
-    Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
+    
+    Pivots_link = [p1, p2, p9];
     
 %rigidity comp
-    sc  = pivot('spring', 80, Lc1-char_disp,    );
+    sc  = pivot('spring', 80, Lc1-char_disp, 3);
     pc1 = pivot('parallel', 5, char_disp        );
     pc2 = pivot('point', 5, asin(z/Lc3)         );
-    pc3 = pc2;
     
-    Pivots_rigidity = [sc, pc1, pc2, pc3];
+    
+    Pivots_rigidity = [sc, pc1, pc2];
     
 %weight comp
-    sg  = pivots('spring', 1, z+Lg     );
+    sg  = pivot('spring', 1, z+Lg, 3    );
              
     Pivots_weight = [sg];
             
@@ -125,9 +119,64 @@ z = z(sort_ind);
 x = x(sort_ind);
 
 gamma = eval(gamma);
-phi = asin(z/L_lev2);
-zm = eval(zm);
-Positions = [alpha beta gamma phi z x zm];
+Positions = [alpha beta gamma z x];
+
+%% Pivot/Spring Physical Dimensions
+
+for i = 1:length(Pivots)
+    for j = 1:length(Materials)
+        switch Pivots(i).type
+            case {'spring','parallel'}
+                syms h L
+                rig = Pivots(i).k == Pivots(i).num_lames * Materials(j).E * b * h^3 / L^3;
+                adm = max(abs(eval(Pivots(i).ener_var))) == Materials(j).o_adm*L^2 /(3*Materials(j).E*h);
+                if Pivots(i).type == "parallel"
+                    fprintf('parallel for pivot %d\n',i)
+                elseif Pivots(i).type == "spring"
+                    fprintf('spring for pivot %d with %d lames\n',i,Pivots(i).num_lames)
+                end
+                Pivots(i) = pivotSolve(Pivots(i),rig, adm, h, L)
+
+            case {'point','col','cross'}
+                %calculation as a col
+                syms e r
+                rig = Pivots(i).k == 2* Materials(j).E * b * e^(2.5) / (9*pi*r^(0.5));
+                adm = max(abs(eval(Pivots(i).ener_var))) == 3*pi*Materials(j).o_adm*sqrt(r)/(4*Materials(j).E*sqrt(e));
+                fprintf('col for pivot %d\n',i)
+                Pivots(i) = pivotSolve(Pivots(i),rig, adm, e, r)
+
+                %calculation as a cross
+                syms h L
+                rig2 = Pivots(i).k == 8*Materials(j).E*b*h^3 /(12*L);
+                adm2 = max(abs(eval(Pivots(i).ener_var))) == Materials(j).o_adm * L /(2*Materials(j).E*h);
+                fprintf('cross for pivot %d\n',i)
+                Pivots(i) = pivotSolve(Pivots(i), rig2, adm2, h, L)
+        end
+    end
+end
+
+p1 = Pivots(1);
+p2 = Pivots(2);
+p9 = Pivots(3);
+sc = Pivots(4);
+pc1 = Pivots(5);
+pc2 = Pivots(6);
+sg = Pivots(7);
+%making copies
+    p3 = p2;    
+    p4 = p1;    
+    p5 = p1;    
+    p6 = p2;    
+    p7 = p2;    
+    p8 = p1;
+    p10 = p9;
+
+    pc3 = pc2;
+    Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
+    Pivots_rigidity = [sc, pc1, pc2, pc3];
+    Pivots_weight = [sg];
+Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight];
+
 
 %% Energy & Force
 Energies = zeros(length(z), length(Pivots)+1);
@@ -147,13 +196,7 @@ force = diff(fctEnergy);
 %Rigidity Tangentielle Residuelle
 rig_res = diff(force);
 
-%% Pivot/Spring Physical Dimensions
 
-for i = 1:length(Pivots)
-    for j = 1:length(Materials)
-        
-    end
-end
 
 %% Results
 
