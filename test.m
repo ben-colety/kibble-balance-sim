@@ -33,13 +33,13 @@ clear all
 % %     sols2 = sols.s(1)(imag(sols.s)==0);
 % end
 %%
-phi = 0:.01:.1;
+phi = 0:.01:.21;
 Positions = phi;
 alu = struct('E', 69e9, 'o_adm', 110e6/2);
 
 Materials = [alu];
-b = 50e-3;
- pl2 = struct('location', 'lev2-lev1',   ...
+b = 30e-3;
+ pl2 = struct(   'location', 'lev2-lev1',   ...
                  'type',     'lame',        ...
                  'k',        1,             ...
                  'cor_adm',  5,             ...
@@ -47,47 +47,50 @@ b = 50e-3;
                  'Dims',     [3; zeros(7,1)]);
  pl4 = struct(   'location', 'lev1-gnd',    ...
                  'type',     'col',         ...
-                 'k',        6,             ...
+                 'k',        0.005,             ...
                  'cor_adm',  5,             ...
                  'ener_var', phi,           ... 
-                 'Dims',     zeros(1, 8)    );
+                 'Dims',     [b; zeros(7,1)]    );
+
 
 Pivots = [pl2 pl4];
 
-syms h L
+
 for i = 1:2;
 for j = 1;
 switch Pivots(i).type
     case 'lame'
-        
+        syms h L
         rig = Pivots(i).k == Pivots(i).Dims(1) * Materials(j).E * b * h^3 / L^3;
         adm = max(abs(Pivots(i).ener_var)) == Materials(j).o_adm*L^2 /(3*Materials(j).E*h);
+        fprintf('lame for pivot %d\n',i)
+        [h L] = pivotSolve(rig, adm, h, L)
+        Pivots(i).dims(1) = h
+    case 'col'
+        syms e r
+        rig = Pivots(i).k == 2* Materials(j).E * b * e^(2.5) / (9*pi*r^(0.5));
+        adm = max(abs(Pivots(i).ener_var)) == 3*pi*Materials(j).o_adm*sqrt(r)/(4*Materials(j).E*sqrt(e));
+        fprintf('col for pivot %d\n',i)
+        [e r] = pivotSolve(rig, adm, e, r)
+    end
 
-%         solutions = solve(rig, adm, [h L],'ReturnConditions', true);
-% 
-%         h_sol  = eval(solutions.h)
-%         L_sol  = eval(solutions.L)
-%         h_real = eval(solutions.h(imag(solutions.h)==0))
-%         L_real = eval(solutions.L(imag(solutions.L)==0))
+end
+end
+
+function [sol1 sol2] = pivotSolve(eq1, eq2, t, s)
         
-        possible = pivotSolve(rig, adm, h, L)
-
-end
-end
-end
-
-function pos_solutions = pivotSolve(eq1, eq2, t, s)
-       
-        solutions = solve(eq1, eq2, [t s]);
+        assume(t, {'real', 'positive'});
+        assume(s, {'real', 'positive'})
+        solutions = vpasolve(eq1, eq2, [t s],'random',true);
         var1 = char(t);
         var2 = char(s);
         
-        h_sol  = eval(solutions.(var1))
-        L_sol  = eval(solutions.(var2))
-        h_real = eval(solutions.(var1)(imag(solutions.(var1))==0))
-        L_real = eval(solutions.(var2)(imag(solutions.(var2))==0))
+        sol1  = eval(solutions.(var1));
+        sol2  = eval(solutions.(var2));
+%         sol1_real = eval(solutions.(var1)(imag(solutions.(var1))==0));
+%         sol2_real = eval(solutions.(var2)(imag(solutions.(var2))==0));
 
-        pos_solutions = struct('h', h_real, 'L', L_real);
+        %pos_solutions = struct(var1, sol1, var2, sol2);
 end
 
 %%
