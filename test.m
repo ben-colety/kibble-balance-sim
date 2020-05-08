@@ -1,5 +1,8 @@
 clc 
 
+
+
+%% trying to find k's for a given force
 syms k1 k2
 
     alu = struct('E', 69e9, 'o_adm', 110e6/2);
