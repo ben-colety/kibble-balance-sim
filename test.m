@@ -1,35 +1,36 @@
 clc 
 
-
+j =1:2;
+Energies = zeros(length(z), length(Pivots(:,1))+1,length(Materials));
 
 %% trying to find k's for a given force
-syms k1 k2
-
-    alu = struct('E', 69e9, 'o_adm', 110e6/2);
-    Materials = [alu];
-
-alpha = (0:0.01:0.1);
-p1 = pivot('point', k1, alpha);          %type, k, displacement variable
-p2 = pivot('point', k2, alpha);
-
-Pivots = [p1 p2];
-
-Energies = sym(zeros(length(alpha),length(Pivots)));
-for i = 1:length(Pivots)
-    Energies(:,i) = calcEnergy(Pivots(i));
-end
-sumEnergies = sum(Energies, 2);
-for i = 1:length(sumEnergies)-1
-    basic_force(i) = (sumEnergies(i+1)-sumEnergies(i));
-end
-basic_force = 0.6 <= basic_force./diff(alpha);
-
-rig = Pivots(i).k == 2* Materials(1).E * b * e^(2.5) / (9*pi*r^(0.5));
-adm = max(abs(Pivots(i).ener_var)) == 3*pi*Materials(1).o_adm*sqrt(r)/(4*Materials(1).E*sqrt(e));
-% k1 = 5;
-% k2 = 6;
-
-eval(basic_force)
+% syms k1 k2
+% 
+%     alu = struct('E', 69e9, 'o_adm', 110e6/2);
+%     Materials = [alu];
+% 
+% alpha = (0:0.01:0.1);
+% p1 = pivot('point', k1, alpha);          %type, k, displacement variable
+% p2 = pivot('point', k2, alpha);
+% 
+% Pivots = [p1 p2];
+% 
+% Energies = sym(zeros(length(alpha),length(Pivots)));
+% for i = 1:length(Pivots)
+%     Energies(:,i) = calcEnergy(Pivots(i));
+% end
+% sumEnergies = sum(Energies, 2);
+% for i = 1:length(sumEnergies)-1
+%     basic_force(i) = (sumEnergies(i+1)-sumEnergies(i));
+% end
+% basic_force = 0.6 <= basic_force./diff(alpha);
+% 
+% rig = Pivots(i).k == 2* Materials(1).E * b * e^(2.5) / (9*pi*r^(0.5));
+% adm = max(abs(Pivots(i).ener_var)) == 3*pi*Materials(1).o_adm*sqrt(r)/(4*Materials(1).E*sqrt(e));
+% % k1 = 5;
+% % k2 = 6;
+% 
+% eval(basic_force)
 
 
 
