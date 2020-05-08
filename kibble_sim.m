@@ -160,11 +160,12 @@ end
 
 %% Energy & Force
 Energies = zeros(length(z), length(Pivots)+1);
-for i = 1:length(Pivots)
-    ener = Pivots(i).quant*calcEnergy(Pivots(i));
-    Energies(:,i) = eval(ener);
-end
 Energies(:,length(Pivots)+1) = -m*g*z;
+    for i = 1:length(Pivots)
+        ener = Pivots(i,1).quant*calcEnergy(Pivots(i,1));
+        Energies(:,i) = eval(ener);
+    end
+
 sumEnergies = sum(Energies, 2);
 
 %Force
@@ -175,6 +176,7 @@ force = diff(fctEnergy);
 
 %Rigidity Tangentielle Residuelle
 rig_res = diff(force);
+
 
 
 
