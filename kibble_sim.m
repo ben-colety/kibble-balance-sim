@@ -35,7 +35,9 @@ gamma = alpha + beta;
 %% Physical Dimensions
 
     %General
-    m = 6;                          %Need to add Linkage mass
+    m_pesee = 3;
+    m_system = 3;
+    m = m_pesee + m_system;
     g = 9.81;
     b = 50e-3;              %thickness of planar material
 
@@ -64,21 +66,18 @@ gamma = alpha + beta;
     p2 = pivot('point', 3, gamma, 4);  
     p3 = pivot('point', 1, beta,  2);
     
-    Pivots_link = [p1, p2, p3];
     
 %rigidity comp
     sc  = pivot('spring', 80, Lc1-char_disp, 2, 3);
     pc1 = pivot('parallel', 5, char_disp, 2);
     pc2 = pivot('point', 5, asin(z/Lc3), 4);
     
-    Pivots_rigidity = [sc, pc1, pc2];
     
 %weight comp
     sg  = pivot('spring', 1, z+Lg, 1, 3    );
              
-    Pivots_weight = [sg];
 for i = 1:length(Materials)            
-Pivots(:,i) = [Pivots_link, Pivots_rigidity, Pivots_weight];
+    Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];
 end
             
 %% Simulation
@@ -129,32 +128,35 @@ for i = 1:length(Materials)
                 syms h L
                 rig = Pivots(j,i).k == Pivots(j,i).num_lames * Materials(i).E * b * h^3 / L^3;
                 adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm*L^2 /(3*Materials(i).E*h);
-                if Pivots(j,i).type == "parallel"
-                    fprintf('parallel for pivot %d\n',j)
-                elseif Pivots(j,i).type == "spring"
-                    fprintf('spring for pivot %d with %d lames\n',j,Pivots(j,i).num_lames)
-                end
-                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, h, L)
+                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, h, L);
 
             case {'point','col','cross'}
                 %calculation as a col
                 syms e r
                 rig = Pivots(j,i).k == 2* Materials(i).E * b * e^(2.5) / (9*pi*r^(0.5));
                 adm = max(abs(eval(Pivots(j,i).ener_var))) == 3*pi*Materials(i).o_adm*sqrt(r)/(4*Materials(i).E*sqrt(e));
-                fprintf('col for pivot %d\n',j)
-                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, e, r)
+                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, e, r);
 
                 %calculation as a cross
                 syms h L
-                rig2 = Pivots(j,i).k == 8*Materials(i).E*b*h^3 /(12*L);
-                adm2 = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm * L /(2*Materials(i).E*h);
-                fprintf('cross for pivot %d\n',j)
-                Pivots(j,i) = pivotSolve(Pivots(j,i), rig2, adm2, h, L)
+                rig = Pivots(j,i).k == 8*Materials(i).E*b*h^3 /(12*L);
+                adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm * L /(2*Materials(i).E*h);
+                Pivots(j,i) = pivotSolve(Pivots(j,i), rig, adm, h, L);
         end
     end
 end
 
 %internal forces check
+    %rigidity compensation
+    %pc2 as col
+    for i = 1:length(Materials)
+        spring_force = safety_factor*2*Pivots(4,i).k*Lc1;
+        area = Pivots(6).e*b;
+        fail = (spring_force/area) >= Materials(i).o_adm;
+        if fail
+            fprintf('Pivot Pc1 can''t take the pressure with material %d',i);
+        end
+    end
 
 
 
@@ -166,7 +168,7 @@ Energies(:,length(Pivots)+1) = -m*g*z;
         Energies(:,i) = eval(ener);
     end
 
-sumEnergies = sum(Energies, 2);
+sumEnergies = sum(Energies, 2);     %summing energies of pivots for each z
 
 %Force
 sampling_res = max(z)*2/(length(z)*4);
@@ -195,7 +197,6 @@ z_course_ind = find(abs(sampling_pts) < 15e-3);
 %maximum residual force during linear trajectory
 max_force   = max(abs(force(min(z_course_ind):max(z_course_ind))))
 
-
 %% Graphics
 %important results
 max_z_graph = tmp;
@@ -208,6 +209,8 @@ xlabel('z (m)');
 ylabel('x (m)');
 xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
+yline(1e-6, 'k', '+1\mum');
+yline(-1e-6, 'k', '-1\mum');
 
 figure(2);
 plot(z, sumEnergies, 'r'); %plot sum of all Potential Energies
@@ -285,7 +288,7 @@ function stop = checkTolerances(Materials, Pivots, alpha, beta, z, x)
     limit_rot_z = 1e-6;
     
 end
-function failure = checkFlambage(Pivots, Materials, Positions)
+function failure = checkFlambage(Pivots, Materials)
 
 end
 
