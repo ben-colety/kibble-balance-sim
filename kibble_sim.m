@@ -24,8 +24,9 @@ clear all; clc; close all; format shorteng;
 %% materials initialization
 safety_factor = 2;
 alu = struct('E', 69e9, 'o_adm', 110e6/safety_factor);
+steel = struct('E', 45, 'o_adm', 120e6/safety_factor);
 
-Materials = [alu];
+Materials = [alu steel];
 
 %% Position Initialization
 syms alpha beta z phi
@@ -34,7 +35,7 @@ gamma = alpha + beta;
 %% Physical Dimensions
 
     %General
-    m = 3;                          %Need to add Linkage mass
+    m = 6;                          %Need to add Linkage mass
     g = 9.81;
     b = 50e-3;              %thickness of planar material
 
@@ -76,9 +77,9 @@ gamma = alpha + beta;
     sg  = pivot('spring', 1, z+Lg, 1, 3    );
              
     Pivots_weight = [sg];
-            
-
-Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight];
+for i = 1:length(Materials)            
+Pivots(:,i) = [Pivots_link, Pivots_rigidity, Pivots_weight];
+end
             
 %% Simulation
 
@@ -121,45 +122,40 @@ Positions = [alpha beta gamma z x];
 
 %% Pivot/Spring Physical Dimensions
 
-for i = 1:length(Pivots)
-    for j = 1:length(Materials)
+for i = 1:length(Materials)
+    for j = 1:length(Pivots(:,i))
         switch Pivots(i).type
             case {'spring','parallel'}
                 syms h L
-                rig = Pivots(i).k == Pivots(i).num_lames * Materials(j).E * b * h^3 / L^3;
-                adm = max(abs(eval(Pivots(i).ener_var))) == Materials(j).o_adm*L^2 /(3*Materials(j).E*h);
-                if Pivots(i).type == "parallel"
-                    fprintf('parallel for pivot %d\n',i)
-                elseif Pivots(i).type == "spring"
-                    fprintf('spring for pivot %d with %d lames\n',i,Pivots(i).num_lames)
+                rig = Pivots(j,i).k == Pivots(j,i).num_lames * Materials(i).E * b * h^3 / L^3;
+                adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm*L^2 /(3*Materials(i).E*h);
+                if Pivots(j,i).type == "parallel"
+                    fprintf('parallel for pivot %d\n',j)
+                elseif Pivots(j,i).type == "spring"
+                    fprintf('spring for pivot %d with %d lames\n',j,Pivots(j,i).num_lames)
                 end
-                Pivots(i) = pivotSolve(Pivots(i),rig, adm, h, L)
+                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, h, L)
 
             case {'point','col','cross'}
                 %calculation as a col
                 syms e r
-                rig = Pivots(i).k == 2* Materials(j).E * b * e^(2.5) / (9*pi*r^(0.5));
-                adm = max(abs(eval(Pivots(i).ener_var))) == 3*pi*Materials(j).o_adm*sqrt(r)/(4*Materials(j).E*sqrt(e));
-                fprintf('col for pivot %d\n',i)
-                Pivots(i) = pivotSolve(Pivots(i),rig, adm, e, r)
+                rig = Pivots(j,i).k == 2* Materials(i).E * b * e^(2.5) / (9*pi*r^(0.5));
+                adm = max(abs(eval(Pivots(j,i).ener_var))) == 3*pi*Materials(i).o_adm*sqrt(r)/(4*Materials(i).E*sqrt(e));
+                fprintf('col for pivot %d\n',j)
+                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, e, r)
 
                 %calculation as a cross
                 syms h L
-                rig2 = Pivots(i).k == 8*Materials(j).E*b*h^3 /(12*L);
-                adm2 = max(abs(eval(Pivots(i).ener_var))) == Materials(j).o_adm * L /(2*Materials(j).E*h);
-                fprintf('cross for pivot %d\n',i)
-                Pivots(i) = pivotSolve(Pivots(i), rig2, adm2, h, L)
+                rig2 = Pivots(j,i).k == 8*Materials(i).E*b*h^3 /(12*L);
+                adm2 = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm * L /(2*Materials(i).E*h);
+                fprintf('cross for pivot %d\n',j)
+                Pivots(j,i) = pivotSolve(Pivots(j,i), rig2, adm2, h, L)
         end
     end
 end
 
-p1  = Pivots(1);
-p2  = Pivots(2);
-p3  = Pivots(3);
-sc  = Pivots(4);
-pc1 = Pivots(5);
-pc2 = Pivots(6);
-sg  = Pivots(7);
+%internal forces check
+
 
 
 %% Energy & Force
@@ -190,6 +186,7 @@ max_gamma   = max(abs(gamma))
 
 disp('during the linear movement');
 z_course_ind = find(abs(z) < 15e-3);
+tmp = max(z_course_ind);
 %maximum parasitic motion in x during linear trajectory
 max_x       = max(abs(x(min(z_course_ind):max(z_course_ind))))
 z_course_ind = find(abs(sampling_pts) < 15e-3);
@@ -198,14 +195,17 @@ max_force   = max(abs(force(min(z_course_ind):max(z_course_ind))))
 
 
 %% Graphics
+%important results
+max_z_graph = tmp;
+
+
 figure(1);
-plot(z, x, 'r');
+plot1 = plot(z, x, 'r');
 title('z vs x');
 xlabel('z (m)');
 ylabel('x (m)');
 xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
-
 
 figure(2);
 plot(z, sumEnergies, 'r'); %plot sum of all Potential Energies
