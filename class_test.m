@@ -1,4 +1,4 @@
-
+format shorteng
 phi = 0:.01:.12;
 Positions = phi;
 alu = struct('E', 69e9, 'o_adm', 110e6/2);
@@ -6,9 +6,9 @@ alu = struct('E', 69e9, 'o_adm', 110e6/2);
 Materials = [alu];
 b = 50e-3;
 
-pl2 = pivot('spring', 1, phi,1);
-pl4 = pivot('point', 4, phi);
-pc1 = pivot('parallel', 5, phi);
+pl2 = pivot('spring', 1, phi,1,1);
+pl4 = pivot('point', 4, phi, 1);
+pc1 = pivot('parallel', 5, phi, 1);
 pl3 = pl2;
 
 Pivots = [pl2 pl3 pl4 pc1];
