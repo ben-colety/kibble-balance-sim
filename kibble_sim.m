@@ -150,7 +150,7 @@ end
     %rigidity compensation
     %pc2 as col
     for i = 1:length(Materials)
-        spring_force = safety_factor*2*Pivots(4,i).k*Lc1;
+        spring_force = 2*Pivots(4,i).k*Lc1;
         area = Pivots(6).e*b;
         fail = (spring_force/area) >= Materials(i).o_adm;
         if fail
