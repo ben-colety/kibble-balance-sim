@@ -4,13 +4,18 @@ classdef pivot
         k;
         ener_var;
         num_lames = 0;
+        quant = 1;
         h; L; e; r;
+        
     end
     methods
-        function obj = pivot(type, k, ener_var, num_lames)
+        function obj = pivot(type, k, ener_var, quant, num_lames)
             obj.type = type;
             obj.k = k;
             obj.ener_var = ener_var;
+            if quant > 1
+                obj.quant = quant;
+            end
             if type == "spring"
                 obj.num_lames = num_lames;
             elseif type == "parallel"
