@@ -19,7 +19,7 @@
 %   beta    : angle between vertical bar and vertical
 %   x       : horizontal displacment of end effector from origin
 %   z       : vertical displacement of end effector from origin
-clear all; clc;
+clear all; clc; close all; format shorteng;
 
 %% materials initialization
 safety_factor = 2;
@@ -59,23 +59,21 @@ gamma = alpha + beta;
     
 %% Pivots/Springs
 %watt linkages
-    p1 = pivot('point', 4, alpha);          %type, k, displacement variable
-    p2 = pivot('point', 3, gamma);  
-    p9 = pivot('point', 1, beta );
+    p1 = pivot('point', 4, alpha, 4);          %type, k, displacement variable
+    p2 = pivot('point', 3, gamma, 4);  
+    p3 = pivot('point', 1, beta,  2);
     
-    
-    Pivots_link = [p1, p2, p9];
+    Pivots_link = [p1, p2, p3];
     
 %rigidity comp
-    sc  = pivot('spring', 80, Lc1-char_disp, 3);
-    pc1 = pivot('parallel', 5, char_disp        );
-    pc2 = pivot('point', 5, asin(z/Lc3)         );
-    
+    sc  = pivot('spring', 80, Lc1-char_disp, 2, 3);
+    pc1 = pivot('parallel', 5, char_disp, 2);
+    pc2 = pivot('point', 5, asin(z/Lc3), 4);
     
     Pivots_rigidity = [sc, pc1, pc2];
     
 %weight comp
-    sg  = pivot('spring', 1, z+Lg, 3    );
+    sg  = pivot('spring', 1, z+Lg, 1, 3    );
              
     Pivots_weight = [sg];
             
@@ -155,33 +153,19 @@ for i = 1:length(Pivots)
     end
 end
 
-p1 = Pivots(1);
-p2 = Pivots(2);
-p9 = Pivots(3);
-sc = Pivots(4);
+p1  = Pivots(1);
+p2  = Pivots(2);
+p3  = Pivots(3);
+sc  = Pivots(4);
 pc1 = Pivots(5);
 pc2 = Pivots(6);
-sg = Pivots(7);
-%making copies
-    p3 = p2;    
-    p4 = p1;    
-    p5 = p1;    
-    p6 = p2;    
-    p7 = p2;    
-    p8 = p1;
-    p10 = p9;
-
-    pc3 = pc2;
-    Pivots_link = [p1, p2, p3, p4, p5, p6, p7, p8, p9, p10];
-    Pivots_rigidity = [sc, pc1, pc2, pc3];
-    Pivots_weight = [sg];
-Pivots = [Pivots_link, Pivots_rigidity, Pivots_weight];
+sg  = Pivots(7);
 
 
 %% Energy & Force
 Energies = zeros(length(z), length(Pivots)+1);
 for i = 1:length(Pivots)
-    ener = calcEnergy(Pivots(i));
+    ener = Pivots(i).quant*calcEnergy(Pivots(i));
     Energies(:,i) = eval(ener);
 end
 Energies(:,length(Pivots)+1) = -m*g*z;
@@ -210,7 +194,7 @@ z_course_ind = find(abs(z) < 15e-3);
 max_x       = max(abs(x(min(z_course_ind):max(z_course_ind))))
 z_course_ind = find(abs(sampling_pts) < 15e-3);
 %maximum residual force during linear trajectory
-max_force = max(abs(force(min(z_course_ind):max(z_course_ind))))
+max_force   = max(abs(force(min(z_course_ind):max(z_course_ind))))
 
 
 %% Graphics
@@ -219,6 +203,8 @@ plot(z, x, 'r');
 title('z vs x');
 xlabel('z (m)');
 ylabel('x (m)');
+xline(15e-3,'k','+15mm');
+xline(-15e-3,'k','-15mm');
 
 
 figure(2);
@@ -226,18 +212,24 @@ plot(z, sumEnergies, 'r'); %plot sum of all Potential Energies
 title('z vs Sum of All Potentiel Energies')
 xlabel('z (m)');
 ylabel('Energy (J)');
+xline(15e-3,'k','+15mm');
+xline(-15e-3,'k','-15mm');
 
 figure(3);
 plot(sampling_pts(1:length(sampling_pts)-1), force, 'g'); %plot Forces
 title('z vs Residual Force')
 xlabel('z (m)');
 ylabel('Residual Force (N)');
+xline(15e-3,'k','+15mm');
+xline(-15e-3,'k','-15mm');
 
 figure(4);
 plot(sampling_pts(1:length(sampling_pts)-2),rig_res);
 title('z vs Residual Tangential Rigidity')
 xlabel('z (m)');
 ylabel('Residual Rigidity (N/m)');
+xline(15e-3,'k','+15mm');
+xline(-15e-3,'k','-15mm');
 
 %% FUNCTIONS
 function checkDims(L1, L2, L3, L4)
