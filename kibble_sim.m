@@ -158,8 +158,6 @@ end
         end
     end
 
-
-
 %% Energy & Force
 Energies = zeros(length(z), length(Pivots)+1);
 Energies(:,length(Pivots)+1) = -m*g*z;
@@ -178,9 +176,6 @@ force = diff(fctEnergy);
 
 %Rigidity Tangentielle Residuelle
 rig_res = diff(force);
-
-
-
 
 %% Results
 
@@ -287,8 +282,5 @@ function stop = checkTolerances(Materials, Pivots, alpha, beta, z, x)
     limit_rot_xy = 50e-6;
     limit_rot_z = 1e-6;
     
-end
-function failure = checkFlambage(Pivots, Materials)
-
 end
 
