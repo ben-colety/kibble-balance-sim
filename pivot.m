@@ -6,6 +6,7 @@ classdef pivot
         num_lames = 0;
         quant = 1;
         h; L; e; r;
+        verified = [1,1];
         
     end
     methods
