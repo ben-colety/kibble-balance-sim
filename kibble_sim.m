@@ -85,9 +85,7 @@ gamma = alpha + beta;
 %weight comp
     sg  = pivot('spring', 1, z+Lg, 1, 3    );
              
-for i = 1:length(Materials)            
-    Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];
-end
+
             
 %% Simulation
 
@@ -99,7 +97,7 @@ x = zeros(500, 1);
 z = zeros(500, 1); 
 i = 1;
 %linkage descending
-while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
+while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 16e-3
     i=i+1;
     alpha(i) = alpha(i-1)+ alpha_pas;
     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
@@ -107,7 +105,7 @@ end
 %reset to 0
 i=i+1;
 %rising
-while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 30e-3
+while (abs(x(i)) < 1e-6 && abs(z(i)) < 15e-3) || abs(z(i)) < 16e-3
     i=i+1;
     alpha(i) = alpha(i-1)- alpha_pas;
     [beta(i), x(i), z(i)] = motionSim(alpha(i), L1, L2);
@@ -130,8 +128,22 @@ Positions = [alpha beta gamma z x];
 
 %% Pivot/Spring Physical Dimensions
 
+%for modifying k's easily
+p1.k = p1.k;
+p2.k = p2.k;
+p3.k = p3.k;
+sc.k = sc.k;
+pc1.k = pc1.k;
+pc2.k = pc2.k;
+sg.k = sg.k;
+        
+for i = 1:length(Materials)            
+    Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];
+end
+
 for i = 1:length(Materials)
     for j = 1:length(Pivots(:,i))
+        Pivots(j,i).verified = [1 1];
         switch Pivots(i).type
             case {'spring','parallel'}
                 syms h L
