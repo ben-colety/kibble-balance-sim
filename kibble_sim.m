@@ -84,8 +84,6 @@ gamma = alpha + beta;
     
 %weight comp
     sg  = pivot('spring', 1, z+Lg, 1, 3    );
-             
-
             
 %% Simulation
 
