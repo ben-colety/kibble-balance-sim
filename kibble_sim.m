@@ -23,10 +23,14 @@ clear all; clc; close all; format shorteng;
 
 %% materials initialization
 safety_factor = 2;
-alu = struct('E', 69e9, 'o_adm', 110e6/safety_factor);
-steel = struct('E', 45, 'o_adm', 120e6/safety_factor);
+cast_alu = struct('E', 72e9, 'o_adm', 200e6/safety_factor);
+wrought_alu = struct('E', 72e9, 'o_adm', 330e6/safety_factor);
+brass = struct('E', 100e9, 'o_adm', 200e6/safety_factor);
+bronze = struct('E', 100e9, 'o_adm', 400e6/safety_factor);
+cast_mag = struct('E', 45e9, 'o_adm', 150e6/safety_factor);
+titan = struct('E', 100e9, 'o_adm', 300e6/safety_factor);
 
-Materials = [alu steel];
+Materials = [cast_alu wrought_alu brass bronze cast_mag titan];
 
 %% Position Initialization
 syms alpha beta z phi
@@ -38,9 +42,14 @@ gamma = alpha + beta;
     m_pesee = 3;
     m_system = 3;
     m = m_pesee + m_system;
-    g = 9.81;
+    g = 9.81; 
     b = 50e-3;              %thickness of planar material
 
+    %Linear Acuator dimensions
+    La1 = 114.3e-3;         %motor length at mid-stroke
+    La2 = 31.8e-3;          %diameter of motor housing
+    
+    
     %Watt Linkage
     L1 = 250e-3;            % length of horizontal bar
     L2 = 75e-3;             % length of vertical bar
@@ -51,14 +60,14 @@ gamma = alpha + beta;
     %Rigidity Compensation
     Lc1 = 50e-3;            % distance spring is compressed when z = 0
     Lc2 = 30e-3;            % length of lames for parallel leaf spring
-    Lc3 = 200e-3;           % length of linking lame
+    Lc3 = 100e-3;           % length of linking lame
 
     char_disp = Lc3 - sqrt(Lc3^2 - z^2);
     
     %Weight Compensation
     Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000
     
-    checkDims(L1, L2, L3, L4);
+    checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc2, Lc3, Lg, b);
     
 %% Pivots/Springs
 %watt linkages
@@ -129,6 +138,13 @@ for i = 1:length(Materials)
                 rig = Pivots(j,i).k == Pivots(j,i).num_lames * Materials(i).E * b * h^3 / L^3;
                 adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm*L^2 /(3*Materials(i).E*h);
                 Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, h, L);
+                %dimension verification
+                if Pivots(j,i).h < 100e-6
+                    warning('Pivot %d of type %s in material %d has blades that are too thin\n',j,Pivots(j,i).type,i)
+                    Pivots(j,i).verified(1) = 0;
+                elseif Pivots(j,i).verified(1) == 1
+                    fprintf('Pivot %d of type %s in material %d seems to work but the blade length still needs to be checked\n',j,Pivots(j,i).type,i)
+                end
 
             case {'point','col','cross'}
                 %calculation as a col
@@ -136,12 +152,46 @@ for i = 1:length(Materials)
                 rig = Pivots(j,i).k == 2* Materials(i).E * b * e^(2.5) / (9*pi*r^(0.5));
                 adm = max(abs(eval(Pivots(j,i).ener_var))) == 3*pi*Materials(i).o_adm*sqrt(r)/(4*Materials(i).E*sqrt(e));
                 Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, e, r);
+                %dimension verification
+                if Pivots(j,i).r/Pivots(j,i).e < 5
+                    warning('Pivot %d as a col in Material %d \tr/e ratio too large', j, i)
+                    Pivots(j,i).verified(1) = 0;
+                end
+                if Pivots(j,i).e < 100e-6 % moodle -> b < 20mm + de passage de fil -> e ~=50um
+                    warning('Pivot %d as a col in Material %d \te too small : %d', j, i, Pivots(j,i).e)
+                    Pivots(j,i).verified(1) = 0;
+                elseif Pivots(j,i).e > 1e-3
+                    warning('Pivot %d as a col in Material %d \te too large : %d', j, i, Pivots(j,i).e)
+                    Pivots(j,i).verified(1) = 0;
+                end
+                if Pivots(j,i).r < 1e-4
+                    warning('Pivot %d as a col in Material %d \tr too small : %d', j, i, Pivots(j,i).r)
+                    Pivots(j,i).verified(1) = 0;
+                elseif Pivots(j,i).r > 0.01 %r must be smaller than 1cm
+                    warning('Pivot %d as a col in Material %d \tr too big : %d', j, i, Pivots(j,i).r)
+                    Pivots(j,i).verified(1) = 0;
+                end
+                if Pivots(j,i).verified(1) == 1
+                    fprintf('Pivot %d as a col in Material %d with e : %d, r : %d is acceptable \n', j, i, Pivots(j,i).e, Pivots(j,i).r);
+                end
 
                 %calculation as a cross
                 syms h L
                 rig = Pivots(j,i).k == 8*Materials(i).E*b*h^3 /(12*L);
                 adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm * L /(2*Materials(i).E*h);
                 Pivots(j,i) = pivotSolve(Pivots(j,i), rig, adm, h, L);
+                %dimension verification
+                if Pivots(j,i).L/Pivots(j,i).h > 60
+                    warning('Pivot %d as a cross in Material %d \tL/h ratio too large', j, i)
+                    Pivots(j,i).verified(2) = 0;
+                end
+                if Pivots(j,i).h < 100e-6
+                    warning('Pivot %d as a cross in Material %d \th too large : %d', j, i, Pivots(j,i).h)
+                    Pivots(j,i).verified(2) = 0;
+                end
+                if Pivots(j,i).verified(2) == 1
+                    fprintf('Pivot %d as a cross in Material %d has good dimensions \n', j, i)
+                end
         end
     end
 end
@@ -232,13 +282,13 @@ xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
 
 %% FUNCTIONS
-function checkDims(L1, L2, L3, L4)
+function checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc2, Lc3, Lg, b)
     margin_x = 30e-3;
-    margin_z = 200e-3;
-    max_x = 600e-3;
+    margin_z = 30e-3;
+    max_x = 2*sqrt(((600e-3)/2)^2 - (b/2)^2);       %taking into account cylindrical constraint
     max_z = 800e-3;
-    x_dim = 2*L1+margin_x;
-    z_dim = L2/2 + L3/2 + L4 + margin_z;
+    x_dim = 2*L1+2*margin_x;
+    z_dim = L2/2 + L3/2 + L4 + 2*margin_z;
     
     if  x_dim > max_x
         error('too big in x')
@@ -246,8 +296,12 @@ function checkDims(L1, L2, L3, L4)
         error('too big in z')
     elseif  L3 < L2
         error('move linkages apart more (L3)')
-    elseif  L4 < L3/2 + L2/2 + 50e-3
+    elseif  L4 < L3/2 + L2/2 + margin_z             %can also add La1 if motor is mounted below linkages
         error('make end effector farther away')
+    elseif  L3-L2 < La1 + margin_z
+        error('not enough space to mount motor inside linkages: %.2f > %.2f', La1 + margin_z, L3-L2)
+    elseif  max_x < 2*Lc3 + 2*30e-3 + 2*2*Lc1+2*margin_x
+        error('rigidity compensation too wide: %.2f > %.2f',2*Lc3 + 2*30e-3 + 2*2*Lc1+2*margin_x,max_x)
     end
 end
 function [beta, EE_x, EE_z] = motionSim(alpha, L1, L2)
