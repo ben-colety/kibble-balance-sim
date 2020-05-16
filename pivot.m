@@ -25,7 +25,7 @@ classdef pivot
         end
         function obj = pivotSolve(obj, eq1, eq2, t, s)
             assume(t, {'real', 'positive'});
-            assume(s, {'real', 'positive'})
+            assume(s, {'real', 'positive'});
             solutions = solve(eq1, eq2, [t s]);
             var1 = char(t);
             var2 = char(s);
