@@ -33,7 +33,7 @@ titan = struct('E', 100e9, 'o_adm', 300e6/safety_factor);
 Materials = [cast_alu wrought_alu brass bronze cast_mag titan];
 
 %% Position Initialization
-syms alpha beta z phi
+syms alpha beta z
 gamma = alpha + beta;
 
 %% Physical Dimensions
@@ -43,7 +43,7 @@ gamma = alpha + beta;
     m_system = 3;
     m = m_pesee + m_system;
     g = 9.81; 
-    b = 50e-3;              %thickness of planar material
+    b = 30e-3;              %thickness of planar material
 
     %Linear Acuator dimensions
     La1 = 114.3e-3;         %motor length at mid-stroke
@@ -58,14 +58,17 @@ gamma = alpha + beta;
                             % and end effector
 
     %Rigidity Compensation
-    Lc1 = 50e-3;            % distance spring is compressed when z = 0
+    Lc1 = 75e-3;            % distance spring is compressed when z = 0
     Lc2 = 30e-3;            % length of lames for parallel leaf spring
-    Lc3 = 100e-3;           % length of linking lame
+    Lc3 = 75e-3;            % length of linking lame
 
     char_disp = Lc3 - sqrt(Lc3^2 - z^2);
     
+    phi = asin(z/Lc3);
+    
     %Weight Compensation
-    Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000
+    Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000 now
+    %in pivot def
     
     checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc2, Lc3, Lg, b);
     
@@ -79,11 +82,12 @@ gamma = alpha + beta;
 %rigidity comp
     sc  = pivot('spring', 80, Lc1-char_disp, 2, 3);
     pc1 = pivot('parallel', 5, char_disp, 2);
-    pc2 = pivot('point', 5, asin(z/Lc3), 4);
+    pc2 = pivot('point', 5, phi, 4);
     
     
 %weight comp
-    sg  = pivot('spring', 1, z+Lg, 1, 3    );
+    k_sg = 1000;
+    sg  = pivot('spring', k_sg, z+m*g/k_sg, 1, 3);
             
 %% Simulation
 
@@ -127,96 +131,98 @@ Positions = [alpha beta gamma z x];
 %% Pivot/Spring Physical Dimensions
 
 %for modifying k's easily
-p1.k = p1.k;
-p2.k = p2.k;
-p3.k = p3.k;
-sc.k = sc.k;
-pc1.k = pc1.k;
-pc2.k = pc2.k;
+p1.k = 49.3e-3;
+p2.k = 49.3e-3;
+p3.k = 49.3e-3;
+sc.k = 500;
+pc1.k = 250;
+pc2.k = 49.3e-3;
 sg.k = sg.k;
         
 for i = 1:length(Materials)            
     Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];
 end
 
-for i = 1:length(Materials)
-    for j = 1:length(Pivots(:,i))
-        Pivots(j,i).verified = [1 1];
-        switch Pivots(i).type
-            case {'spring','parallel'}
-                syms h L
-                rig = Pivots(j,i).k == Pivots(j,i).num_lames * Materials(i).E * b * h^3 / L^3;
-                adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm*L^2 /(3*Materials(i).E*h);
-                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, h, L);
-                %dimension verification
-                if Pivots(j,i).h < 100e-6
-                    warning('Pivot %d of type %s in material %d has blades that are too thin\n',j,Pivots(j,i).type,i)
-                    Pivots(j,i).verified(1) = 0;
-                elseif Pivots(j,i).verified(1) == 1
-                    fprintf('Pivot %d of type %s in material %d seems to work but the blade length still needs to be checked\n',j,Pivots(j,i).type,i)
-                end
-
-            case {'point','col','cross'}
-                %calculation as a col
-                syms e r
-                rig = Pivots(j,i).k == 2* Materials(i).E * b * e^(2.5) / (9*pi*r^(0.5));
-                adm = max(abs(eval(Pivots(j,i).ener_var))) == 3*pi*Materials(i).o_adm*sqrt(r)/(4*Materials(i).E*sqrt(e));
-                Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, e, r);
-                %dimension verification
-                if Pivots(j,i).r/Pivots(j,i).e < 5
-                    warning('Pivot %d as a col in Material %d \tr/e ratio too large', j, i)
-                    Pivots(j,i).verified(1) = 0;
-                end
-                if Pivots(j,i).e < 100e-6 % moodle -> b < 20mm + de passage de fil -> e ~=50um
-                    warning('Pivot %d as a col in Material %d \te too small : %d', j, i, Pivots(j,i).e)
-                    Pivots(j,i).verified(1) = 0;
-                elseif Pivots(j,i).e > 1e-3
-                    warning('Pivot %d as a col in Material %d \te too large : %d', j, i, Pivots(j,i).e)
-                    Pivots(j,i).verified(1) = 0;
-                end
-                if Pivots(j,i).r < 1e-4
-                    warning('Pivot %d as a col in Material %d \tr too small : %d', j, i, Pivots(j,i).r)
-                    Pivots(j,i).verified(1) = 0;
-                elseif Pivots(j,i).r > 0.01 %r must be smaller than 1cm
-                    warning('Pivot %d as a col in Material %d \tr too big : %d', j, i, Pivots(j,i).r)
-                    Pivots(j,i).verified(1) = 0;
-                end
-                if Pivots(j,i).verified(1) == 1
-                    fprintf('Pivot %d as a col in Material %d with e : %d, r : %d is acceptable \n', j, i, Pivots(j,i).e, Pivots(j,i).r);
-                end
-
-                %calculation as a cross
-                syms h L
-                rig = Pivots(j,i).k == 8*Materials(i).E*b*h^3 /(12*L);
-                adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm * L /(2*Materials(i).E*h);
-                Pivots(j,i) = pivotSolve(Pivots(j,i), rig, adm, h, L);
-                %dimension verification
-                if Pivots(j,i).L/Pivots(j,i).h > 60
-                    warning('Pivot %d as a cross in Material %d \tL/h ratio too large', j, i)
-                    Pivots(j,i).verified(2) = 0;
-                end
-                if Pivots(j,i).h < 100e-6
-                    warning('Pivot %d as a cross in Material %d \th too large : %d', j, i, Pivots(j,i).h)
-                    Pivots(j,i).verified(2) = 0;
-                end
-                if Pivots(j,i).verified(2) == 1
-                    fprintf('Pivot %d as a cross in Material %d has good dimensions \n', j, i)
-                end
-        end
-    end
-end
+%% for i = 1:length(Materials)
+%     for j = 1:length(Pivots(:,i))
+%         Pivots(j,i).h = 0; Pivots(j,i).L = 0; Pivots(j,i).e = 0; Pivots(j,i).r = 0;
+%         Pivots(j,i).verified = [1 1];
+%         switch Pivots(j,i).type
+%             case {'spring','parallel'}
+%                 syms h L
+%                 rig = Pivots(j,i).k == Pivots(j,i).num_lames * Materials(i).E * b * h^3 / L^3;
+%                 adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm*L^2 /(3*Materials(i).E*h);
+%                 Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, h, L);
+%                 %dimension verification
+%                 Pivots(j,i).verified(2) = 0;
+%                 if Pivots(j,i).h < 100e-6
+%                     warning('Pivot %d of type %s in material %d has blades that are too thin\n',j,Pivots(j,i).type,i)
+%                     Pivots(j,i).verified(1) = 0;
+%                 elseif Pivots(j,i).verified(1) == 1
+%                     fprintf('Pivot %d of type %s in material %d seems to work but the blade length still needs to be checked\n',j,Pivots(j,i).type,i)
+%                 end
+% 
+%             case {'point','col','cross'}
+%                 %calculation as a col
+%                 syms e r
+%                 rig = Pivots(j,i).k == 2* Materials(i).E * b * e^(2.5) / (9*pi*r^(0.5));
+%                 adm = max(abs(eval(Pivots(j,i).ener_var))) == 3*pi*Materials(i).o_adm*sqrt(r)/(4*Materials(i).E*sqrt(e));
+%                 Pivots(j,i) = pivotSolve(Pivots(j,i),rig, adm, e, r);
+%                 %dimension verification
+%                 if Pivots(j,i).r/Pivots(j,i).e < 5
+%                     warning('Pivot %d as a col in Material %d \tr/e ratio too large', j, i)
+%                     Pivots(j,i).verified(1) = 0;
+%                 end
+%                 if Pivots(j,i).e < 50e-6 % moodle -> b < 20mm + de passage de fil -> e ~=50um
+%                     warning('Pivot %d as a col in Material %d \te too small : %d', j, i, Pivots(j,i).e)
+%                     Pivots(j,i).verified(1) = 0;
+%                 elseif Pivots(j,i).e > 1e-3
+%                     warning('Pivot %d as a col in Material %d \te too large : %d', j, i, Pivots(j,i).e)
+%                     Pivots(j,i).verified(1) = 0;
+%                 end
+%                 if Pivots(j,i).r < 1e-4
+%                     warning('Pivot %d as a col in Material %d \tr too small : %d', j, i, Pivots(j,i).r)
+%                     Pivots(j,i).verified(1) = 0;
+%                 elseif Pivots(j,i).r > 0.01 %r must be smaller than 1cm
+%                     warning('Pivot %d as a col in Material %d \tr too big : %d', j, i, Pivots(j,i).r)
+%                     Pivots(j,i).verified(1) = 0;
+%                 end
+%                 if Pivots(j,i).verified(1) == 1
+%                     fprintf('Pivot %d as a col in Material %d with e : %d, r : %d is acceptable \n', j, i, Pivots(j,i).e, Pivots(j,i).r);
+%                 end
+% 
+%                 %calculation as a cross
+%                 syms h L
+%                 rig = Pivots(j,i).k == 8*Materials(i).E*b*h^3 /(12*L);
+%                 adm = max(abs(eval(Pivots(j,i).ener_var))) == Materials(i).o_adm * L /(2*Materials(i).E*h);
+%                 Pivots(j,i) = pivotSolve(Pivots(j,i), rig, adm, h, L);
+%                 %dimension verification
+%                 if Pivots(j,i).L/Pivots(j,i).h > 60
+%                     warning('Pivot %d as a cross in Material %d \tL/h ratio too large', j, i)
+%                     Pivots(j,i).verified(2) = 0;
+%                 end
+%                 if Pivots(j,i).h < 100e-6
+%                     warning('Pivot %d as a cross in Material %d \th too large : %d', j, i, Pivots(j,i).h)
+%                     Pivots(j,i).verified(2) = 0;
+%                 end
+%                 if Pivots(j,i).verified(2) == 1
+%                     fprintf('Pivot %d as a cross in Material %d has good dimensions \n', j, i)
+%                 end
+%         end
+%     end
+% end
 
 %internal forces check
     %rigidity compensation
     %pc2 as col
-    for i = 1:length(Materials)
-        spring_force = 2*Pivots(4,i).k*Lc1;
-        area = Pivots(6).e*b;
-        fail = (spring_force/area) >= Materials(i).o_adm;
-        if fail
-            fprintf('Pivot Pc1 can''t take the pressure with material %d',i);
-        end
-    end
+%     for i = 1:length(Materials)
+%         spring_force = 2*Pivots(4,i).k*Lc1;
+%         area = Pivots(6,i).e*b;
+%         fail = (spring_force/area) >= Materials(i).o_adm;
+%         if fail
+%             fprintf('Pivot Pc1 can''t take the pressure with material %d',i);
+%         end
+%     end
 
 %% Energy & Force
 Energies = zeros(length(z), length(Pivots)+1);
@@ -229,13 +235,13 @@ Energies(:,length(Pivots)+1) = -m*g*z;
 sumEnergies = sum(Energies, 2);     %summing energies of pivots for each z
 
 %Force
-sampling_res = max(z)*2/(length(z)*4);
-sampling_pts = min(z):sampling_res:max(z);
-fctEnergy = interp1(z,sumEnergies, sampling_pts, 'spline');
-force = diff(fctEnergy);
-
-%Rigidity Tangentielle Residuelle
-rig_res = diff(force);
+force = zeros(length(sumEnergies),1);
+for i = 2:length(sumEnergies)-1
+    force(i) = (sumEnergies(i+1) - sumEnergies(i-1))/abs(z(i+1)-z(i-1));
+end
+force(1) = (sumEnergies(2)-sumEnergies(1))/abs(z(2)-z(1));
+n = length(sumEnergies);
+force(n) = (sumEnergies(n)-sumEnergies(n-1))/abs(z(n)-z(n-1));
 
 %% Results
 
@@ -248,14 +254,12 @@ z_course_ind = find(abs(z) < 15e-3);
 tmp = max(z_course_ind);
 %maximum parasitic motion in x during linear trajectory
 max_x       = max(abs(x(min(z_course_ind):max(z_course_ind))))
-z_course_ind = find(abs(sampling_pts) < 15e-3);
 %maximum residual force during linear trajectory
 max_force   = max(abs(force(min(z_course_ind):max(z_course_ind))))
 
 %% Graphics
 %important results
 max_z_graph = tmp;
-
 
 figure(1);
 plot1 = plot(z, x, 'r');
@@ -276,20 +280,20 @@ xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
 
 figure(3);
-plot(sampling_pts(1:length(sampling_pts)-1), force, 'g'); %plot Forces
+plot(z, force, 'g'); %plot Forces
 title('z vs Residual Force')
 xlabel('z (m)');
 ylabel('Residual Force (N)');
 xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
 
-figure(4);
-plot(sampling_pts(1:length(sampling_pts)-2),rig_res);
-title('z vs Residual Tangential Rigidity')
-xlabel('z (m)');
-ylabel('Residual Rigidity (N/m)');
-xline(15e-3,'k','+15mm');
-xline(-15e-3,'k','-15mm');
+% figure(4);
+% plot(z,rig_res);
+% title('z vs Residual Tangential Rigidity')
+% xlabel('z (m)');
+% ylabel('Residual Rigidity (N/m)');
+% xline(15e-3,'k','+15mm');
+% xline(-15e-3,'k','-15mm');
 
 %% FUNCTIONS
 function checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc2, Lc3, Lg, b)
