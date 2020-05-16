@@ -1,7 +1,33 @@
 clc 
 
-j =1:2;
-Energies = zeros(length(z), length(Pivots(:,1))+1,length(Materials));
+syms r
+h = 100e-6;
+L = 25e-3;
+b = 30e-3
+    rig = 250 == 2 * 72e9 * b * h^3 / L^3;
+    adm =  160e6*L^2 /(3*72e9*h)
+% sol = solve(rig,adm,[h L])
+% eval(sol.h)
+% eval(sol.L)
+rigidity = solve(rig,r)
+eval(rigidity)
+adm
+% method = 'Bilinear';
+% 
+% switch lower(method)
+%    case {'linear','bilinear'}
+%       disp('Method is linear')
+%    case 'cubic'
+%       disp('Method is cubic')
+%    case 'nearest'
+%       disp('Method is nearest')
+%    otherwise
+%       disp('Unknown method.')
+% end
+
+
+% j =1:2;
+% Energies = zeros(length(z), length(Pivots(:,1))+1,length(Materials));
 
 %% trying to find k's for a given force
 % syms k1 k2
