@@ -59,7 +59,7 @@ gamma = alpha + beta;
 
     %Rigidity Compensation
     Lc1 = 75e-3;            % distance spring is compressed when z = 0
-    Lc2 = 30e-3;            % length of lames for parallel leaf spring
+    %Lc2 = 30e-3;            % length of lames for parallel leaf spring
     Lc3 = 75e-3;            % length of linking lame
 
     char_disp = Lc3 - sqrt(Lc3^2 - z^2);
@@ -70,7 +70,7 @@ gamma = alpha + beta;
     Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000 now
     %in pivot def
     
-    checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc2, Lc3, Lg, b);
+    checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc3, Lg, b);
     
 %% Pivots/Springs
 %watt linkages
@@ -140,7 +140,7 @@ pc2.k = 49.3e-3;
 sg.k = sg.k;
         
 for i = 1:length(Materials)            
-    Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];
+    Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];           %delete sc from this table to find equivalent rigidity without compensation
 end
 
 %% for i = 1:length(Materials)
@@ -243,6 +243,15 @@ force(1) = (sumEnergies(2)-sumEnergies(1))/abs(z(2)-z(1));
 n = length(sumEnergies);
 force(n) = (sumEnergies(n)-sumEnergies(n-1))/abs(z(n)-z(n-1));
 
+%Rigidity Residuelle
+rigidity = zeros(length(sumEnergies),1);
+for i = 2:length(sumEnergies)-1
+    rigidity(i) = (force(i+1) - force(i-1))/(z(i+1)-z(i-1));
+end
+rigidity(1) = (force(2)-force(1))/(z(2)-z(1));
+n = length(sumEnergies);
+rigidity(n) = (force(n)-force(n-1))/(z(n)-z(n-1));
+
 %% Results
 
 max_alpha   = max(abs(alpha))
@@ -251,15 +260,15 @@ max_gamma   = max(abs(gamma))
 
 disp('during the linear movement');
 z_course_ind = find(abs(z) < 15e-3);
-tmp = max(z_course_ind);
 %maximum parasitic motion in x during linear trajectory
 max_x       = max(abs(x(min(z_course_ind):max(z_course_ind))))
 %maximum residual force during linear trajectory
 max_force   = max(abs(force(min(z_course_ind):max(z_course_ind))))
+%maximum residual rigidity during linear trajectory
+max_rigidity   = max(abs(rigidity(min(z_course_ind):max(z_course_ind))))
 
 %% Graphics
-%important results
-max_z_graph = tmp;
+
 
 figure(1);
 plot1 = plot(z, x, 'r');
@@ -287,16 +296,16 @@ ylabel('Residual Force (N)');
 xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
 
-% figure(4);
-% plot(z,rig_res);
-% title('z vs Residual Tangential Rigidity')
-% xlabel('z (m)');
-% ylabel('Residual Rigidity (N/m)');
-% xline(15e-3,'k','+15mm');
-% xline(-15e-3,'k','-15mm');
+figure(4);
+plot(z,rig_res);
+title('z vs Residual Tangential Rigidity')
+xlabel('z (m)');
+ylabel('Residual Rigidity (N/m)');
+xline(15e-3,'k','+15mm');
+xline(-15e-3,'k','-15mm');
 
 %% FUNCTIONS
-function checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc2, Lc3, Lg, b)
+function checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc3, Lg, b)
     margin_x = 30e-3;
     margin_z = 30e-3;
     max_x = 2*sqrt(((600e-3)/2)^2 - (b/2)^2);       %taking into account cylindrical constraint
