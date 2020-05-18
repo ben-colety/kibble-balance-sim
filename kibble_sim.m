@@ -225,9 +225,9 @@ end
 %     end
 
 %% Energy & Force
-Energies = zeros(length(z), length(Pivots)+1);
-Energies(:,length(Pivots)+1) = -m*g*z;
-    for i = 1:length(Pivots)
+Energies = zeros(length(z), length(Pivots(:,1))+1);
+Energies(:,length(Pivots(:,1))+1) = -m*g*z;
+    for i = 1:length(Pivots(:,1))
         ener = Pivots(i,1).quant*calcEnergy(Pivots(i,1));
         Energies(:,i) = eval(ener);
     end
@@ -245,7 +245,7 @@ force(n) = (sumEnergies(n)-sumEnergies(n-1))/abs(z(n)-z(n-1));
 
 %Rigidity Residuelle
 rigidity = zeros(length(sumEnergies),1);
-for i = 2:length(sumEnergies)-1
+for i = 2:(length(sumEnergies)-1)
     rigidity(i) = (force(i+1) - force(i-1))/(z(i+1)-z(i-1));
 end
 rigidity(1) = (force(2)-force(1))/(z(2)-z(1));
@@ -297,7 +297,7 @@ xline(15e-3,'k','+15mm');
 xline(-15e-3,'k','-15mm');
 
 figure(4);
-plot(z,rig_res);
+plot(z,rigidity);
 title('z vs Residual Tangential Rigidity')
 xlabel('z (m)');
 ylabel('Residual Rigidity (N/m)');
