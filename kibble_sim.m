@@ -34,7 +34,8 @@ Materials = [cast_alu wrought_alu brass bronze cast_mag titan];
 
 %% Position Initialization
 syms alpha beta z
-gamma = alpha + beta;
+gamma1 = alpha + beta;
+gamma2 = alpha - beta;
 
 %% Physical Dimensions
 
@@ -58,36 +59,33 @@ gamma = alpha + beta;
                             % and end effector
 
     %Rigidity Compensation
-    Lc1 = 75e-3;            % distance spring is compressed when z = 0
-    %Lc2 = 30e-3;            % length of lames for parallel leaf spring
-    Lc3 = 75e-3;            % length of linking lame
+    Lc3 = 150e-3;            % length of linking lame
 
-    char_disp = Lc3 - sqrt(Lc3^2 - z^2);
-    
-    phi = asin(z/Lc3);
-    
     %Weight Compensation
-    Lg = m*g/1000;          %extension of spring at z = 0 for k = 1000 now
-    %in pivot def
-    
-    checkDims(L1, L2, L3, L4, La1, La2, Lc1, Lc3, Lg, b);
+    L_poids = 110e-3;       %length of spring lames
+    Lp1 = 20e-3;            %length of parasitic shift lame
     
 %% Pivots/Springs
-%watt linkages
-    p1 = pivot('point', 4, alpha, 4);          %type, k, displacement variable
-    p2 = pivot('point', 3, gamma, 4);  
-    p3 = pivot('point', 1, beta,  2);
+
+% displacements
+    char_disp = Lc3 - sqrt(Lc3^2 - z^2);
+    phi = asin(z/Lc3);
     
+%watt linkages
+    p1 = pivot('point', 4, alpha, 4);           %type, k, displacement variable
+    p2 = pivot('point', 3, gamma1, 2);
+    p3 = pivot('point', 1, beta,  2);
+    p4 = pivot('point', 3, gamma2, 2);
     
 %rigidity comp
-    sc  = pivot('spring', 80, Lc1-char_disp, 2, 3);
-    pc1 = pivot('parallel', 5, char_disp, 2);
-    pc2 = pivot('point', 5, phi, 4);
-    
+    pc_r = 20e-3;                               %precharge of rigidity compensation
+    sc  = pivot('spring', 80, pc_r-char_disp, 2, 3);
+    pr1 = pivot('point', 5, phi, 4);
     
 %weight comp
-    k_sg = 1000;
-    sg  = pivot('spring', k_sg, z+m*g/k_sg, 1, 3);
+    pc_p = 20e-3;                               %precharge for compensations de poids
+    sg  = pivot('spring', 10, z+pc_p, 2, 3);
+    pp1 = pivot('lame', 5, (3*(pc_p +z)^2)/(2*5*L_poids), 2*sg.quant);
             
 %% Simulation
 
@@ -125,22 +123,24 @@ beta = beta(sort_ind);
 z = z(sort_ind);
 x = x(sort_ind);
 
-gamma = eval(gamma);
-Positions = [alpha beta gamma z x];
+gamma1 = eval(gamma1);
+gamma2 = eval(gamma2);
+Positions = [alpha beta gamma1 gamma2 z x];
 
 %% Pivot/Spring Physical Dimensions
 
 %for modifying k's easily
-p1.k = 49.3e-3;
-p2.k = 49.3e-3;
-p3.k = 49.3e-3;
+p1.k = 32.3e-3;
+p2.k = 32.3e-3;
+p3.k = 32.3e-3;
+p4.k = 32.3e-3;
 sc.k = 500;
-pc1.k = 250;
-pc2.k = 49.3e-3;
+pr1.k = 32.3e-3;
 sg.k = sg.k;
-        
+pp1.k = pp1.k;
+
 for i = 1:length(Materials)            
-    Pivots(:,i) = [p1, p2, p3, sc, pc1, pc2, sg];           %delete sc from this table to find equivalent rigidity without compensation
+    Pivots(:,i) = [p1, p2, p3, p4];%           %delete sc from this table to find equivalent rigidity without compensation
 end
 
 %% for i = 1:length(Materials)
@@ -226,7 +226,7 @@ end
 
 %% Energy & Force
 Energies = zeros(length(z), length(Pivots(:,1))+1);
-Energies(:,length(Pivots(:,1))+1) = -m*g*z;
+%Energies(:,length(Pivots(:,1))+1) = -m*g*z;
     for i = 1:length(Pivots(:,1))
         ener = Pivots(i,1).quant*calcEnergy(Pivots(i,1));
         Energies(:,i) = eval(ener);
@@ -256,7 +256,7 @@ rigidity(n) = (force(n)-force(n-1))/(z(n)-z(n-1));
 
 max_alpha   = max(abs(alpha))
 max_beta    = max(abs(beta))
-max_gamma   = max(abs(gamma))
+max_gamma   = max(abs(gamma1))
 
 disp('during the linear movement');
 z_course_ind = find(abs(z) < 15e-3);
