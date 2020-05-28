@@ -268,8 +268,6 @@ max_force   = max(abs(force(min(z_course_ind):max(z_course_ind))))
 max_rigidity   = max(abs(rigidity(min(z_course_ind):max(z_course_ind))))
 
 %% Graphics
-
-
 figure(1);
 plot1 = plot(z, x, 'r');
 title('z vs x');
