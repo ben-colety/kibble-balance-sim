@@ -1,17 +1,43 @@
 clc 
+clear all
 
-syms r
-h = 100e-6;
-L = 25e-3;
-b = 30e-3
-    rig = 250 == 2 * 72e9 * b * h^3 / L^3;
-    adm =  160e6*L^2 /(3*72e9*h)
-% sol = solve(rig,adm,[h L])
-% eval(sol.h)
-% eval(sol.L)
-rigidity = solve(rig,r)
-eval(rigidity)
-adm
+
+z = linspace(0,2*pi)
+seta = sin(z)
+
+% E = 77e9;
+% o_adm = 210e6;
+% num_lames = 3;
+% b = 30e-3;
+% m = 6;
+% g = 9.81;
+% syms L h
+% assume(L, {'real', 'positive'});
+% lim = L/h <=60;
+% 
+% form = 16 <= (L^2)/(h*E) * (o_adm/3 - (m*g*L)/(num_lames*b*h^2));
+% sol = vpasolve(form, lim, [L h])
+% 
+% 
+% 
+
+
+
+
+
+
+% syms r
+% h = 100e-6;
+% L = 25e-3;
+% b = 30e-3
+%     rig = 250 == 2 * 72e9 * b * h^3 / L^3;
+%     adm =  160e6*L^2 /(3*72e9*h)
+% % sol = solve(rig,adm,[h L])
+% % eval(sol.h)
+% % eval(sol.L)
+% rigidity = solve(rig,r)
+% eval(rigidity)
+% adm
 % method = 'Bilinear';
 % 
 % switch lower(method)
